@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Audio for Speech Recognition</title>
+    <script>
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    //const dictionary = {mimeType: 'audio/wav'}
+                    const mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+
+                    const audioChunks = [];
+                    mediaRecorder.addEventListener("dataavailable", event => {
+                        audioChunks.push(event.data);
+                    });
+
+                    mediaRecorder.addEventListener("stop", () => {
+                        const audioBlob = new Blob(audioChunks);
+
+                        const formData = new FormData();
+                        formData.append("file", audioBlob);
+
+                        fetch("/voice-recognition", {
+                            method: "POST",
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data);
+                            document.getElementById("transcription").textContent = data.recognized_text || "Error: " + data.error;
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                    });
+
+                    setTimeout(() => {
+                        mediaRecorder.stop();
+                    }, 5000); // Stop recording after 5 seconds
+                });
+        }
+    </script>
+</head>
+
+<body>
+    <header></header>
+
+    
+    <div class="content">
+        <div class="header"> </div>
+            <img src="BannerBackground.png">
+            <h1> <span>ASL</span> Translator</h1>
+            <p class="titleCaption">This website helps you translate text into American Sign Language (ASL) gestures.     
+            </p>
+            
+
+    <div class="textboxContent">
+        <textarea placeholder="Enter text to translate"></textarea>
+    
+
+        <div class="buttons">
+            <button onclick="startRecording()" class="button1">Record Audio</button>
+            <button onclick="translateToASL()" class="button2">Translate to sign</button>
+        </div>
+
+        <h2>Transcription Will Appear Here</h2>
+            <div class="displaybox">
+                <p id="transcription">Transcription will appear here after recording.</p>
+            </div>
+
+            <h2>TRANSLATION Will appear here</h2>
+            <div class="displaybox">
+                <p id="translation">Translation will appear here after recording.</p>
+                <p class="sign-language-text" id="sign-language-text">Sign Language1: Translated text in sign language will appear here after recording.</p>
+            </div>
+        </div>
+
+    </div>
+
+
+
+</body>
+</html>
