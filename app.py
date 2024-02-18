@@ -1,10 +1,23 @@
 import uuid
 import os
-from flask import Flask, request, jsonify, render_template
+import json
+from flask import Flask, request, jsonify, render_template, redirect, session, url_for
+
 from werkzeug.utils import secure_filename
 import speech_recognition as sr
 import subprocess
 
+from os import environ as env
+from urllib.parse import quote_plus, urlencode
+
+from authlib.integrations.flask_client import OAuth
+from dotenv import find_dotenv, load_dotenv
+
+import openai
+
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
 app = Flask(__name__)
 # Set the upload folder relative to the script location
@@ -15,6 +28,28 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+def translate_text(input_text, source_language, target_language):
+    """
+    Translates text from one language to another using OpenAI's translation model.
+
+    :param input_text: The text to be translated.
+    :param source_language: The source language of the text (e.g., 'English').
+    :param target_language: The target language for translation (e.g., 'Spanish').
+    :return: Translated text.
+    """
+    openai.api_key = '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'  # Replace with your OpenAI API key
+
+    try:
+        response = openai.Completion.create(
+            engine="gpt-3.5-turbo-instruct",  # Updated to the latest model
+            prompt=f"Translate this from {source_language} to {target_language}: {input_text}",
+            temperature=0.7,
+            max_tokens=60
+        )
+        return response.choices[0].text.strip()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
 @app.route('/')
 def hello_world():

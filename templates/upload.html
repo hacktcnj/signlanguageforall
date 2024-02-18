@@ -4,11 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Record Audio for Speech Recognition</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Include any additional CSS if needed -->
+    <style>
+        @font-face {
+            font-family: "SignLanguageFont";
+            src: url("path/to/sign-language-font.ttf") format("truetype"); /* Replace "path/to/sign-language-font.ttf" with the path to your font file */
+        }
+
+        .sign-language-text {
+            font-family: "SignLanguageFont", sans-serif;
+            font-size: 36px; /* Adjust font size as needed */
+        }
+    </style>
     <script>
         function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
-                    //const dictionary = {mimeType: 'audio/wav'}
                     const mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.start();
 
@@ -19,7 +30,6 @@
 
                     mediaRecorder.addEventListener("stop", () => {
                         const audioBlob = new Blob(audioChunks);
-
                         const formData = new FormData();
                         formData.append("file", audioBlob);
 
@@ -30,7 +40,30 @@
                         .then(response => response.json())
                         .then(data => {
                             console.log(data);
-                            document.getElementById("transcription").textContent = data.recognized_text || "Error: " + data.error;
+                            const transcription = data.recognized_text ? "The result is: " + data.recognized_text : "Error: " + data.error;
+                            document.getElementById("transcription").textContent = transcription;
+
+                            // Make a request to translate the recognized text to Spanish
+                            fetch("/translate", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    text: data.recognized_text,
+                                    source_language: "English",
+                                    target_language: "Spanish"
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(translationData => {
+                                const translation = translationData.translated_text;
+                                document.getElementById("translation").textContent = "Translated to Spanish: " + translation;
+                                document.getElementById("sign-language-translation").textContent = "Sign Language: " + translation; // Display translated text in sign language
+                            })
+                            .catch(error => {
+                                console.error(error);
+                            });
                         })
                         .catch(error => {
                             console.error(error);
@@ -39,7 +72,7 @@
 
                     setTimeout(() => {
                         mediaRecorder.stop();
-                    }, 5000); // Stop recording after 5 seconds
+                    }, 5000);
                 });
         }
     </script>
@@ -48,5 +81,7 @@
     <h1>Record Audio for Speech Recognition</h1>
     <button onclick="startRecording()">Record Audio</button>
     <p id="transcription">Transcription will appear here after recording.</p>
+    <p id="translation">Translation will appear here after recording.</p>
+    <p class="sign-language-text" id="sign-language-translation">Sign Language: Translated text in sign language will appear here after recording.</p>
 </body>
 </html>
