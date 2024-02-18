@@ -19,7 +19,7 @@ ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 # Set the upload folder relative to the script location
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -85,6 +85,7 @@ def recognize_speech():
         # Recognize speech using Google Web Speech API
         
         text = r.recognize_google(audio_data, language='en-US')
+        #textToSign(text)
         return jsonify({'recognized_text': text})
     except sr.UnknownValueError:
         return jsonify({'error': "Could not understand audio"}), 400
@@ -97,6 +98,17 @@ def recognize_speech():
         delete_file_if_exists(original_blob)
 
         #delete blob files    
+
+@app.route('/text-to-sign', methods=['POST'])
+def text_to_sign():
+    # Get the text from the request
+    data = request.get_json()
+    textSign = data['text']
+
+    # Convert the text to sign language text here
+    # For now, we just return the same text for demonstration
+    #sign_language_text = some_conversion_function(text)  # Replace with actual conversion logic
+    return jsonify({'textSign': textSign})
 
 def delete_file_if_exists(file_path):
     """Delete file if it exists."""
